@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistant/FeatureBox.dart';
+import 'package:voice_assistant/openai_service.dart';
 import 'package:voice_assistant/pallete.dart';
 
 class Homepage extends StatefulWidget {
@@ -14,6 +15,7 @@ class Homepage extends StatefulWidget {
 class _HomepageState extends State<Homepage> {
   final speechToText = SpeechToText();
   String lastWords = '';
+  final OpenAIService openAIService = OpenAIService();
 
   @override
   void initState() {
@@ -161,6 +163,9 @@ class _HomepageState extends State<Homepage> {
             await startListening();
             //app is already listening
           } else if (speechToText.isListening) {
+            //check weather user is asking for question or generation of image
+            final speech = await openAIService.isArtAPI(lastWords);
+            print(speech);
             await stopListening();
           } else {
             initSpeechToText();
