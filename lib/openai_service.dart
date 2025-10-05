@@ -85,6 +85,29 @@ class OpenAIService {
 
   //dallE api
   Future<String> dallEAPI(String prompt) async {
-    return 'Dall-E';
+    //if user asks questions regrading art so here we go
+    messages.add({'role': 'user', 'content': prompt});
+    try {
+      final res = await http.post(
+        Uri.parse('https://api.openai.com/v1/images/generations'),
+        headers: {
+          'Content - Type': "application/json",
+          'Authorization': "Bearer $openAIAPIKey",
+        },
+        body: jsonEncode({'model': "gpt-image-1", 'prompt': prompt, 'n': 1}),
+      );
+      print(res.body);
+      if (res.statusCode == 200) {
+        String imageUrl = jsonDecode(res.body)['data'][0]['url'];
+        //removes spaces
+        imageUrl = imageUrl.trim();
+        //here user is assitant it means chatgpt is responding
+        messages.add({'role': 'assistant', 'content': imageUrl});
+        return imageUrl;
+      }
+      return 'An internal error occured';
+    } catch (e) {
+      return e.toString();
+    }
   }
 }
