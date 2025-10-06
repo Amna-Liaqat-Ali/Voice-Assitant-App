@@ -1,3 +1,4 @@
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
@@ -18,6 +19,10 @@ class _HomepageState extends State<Homepage> {
   final flutterTts = FlutterTts();
   String lastWords = '';
   final OpenAIService openAIService = OpenAIService();
+
+  //timings for animations of feature boxes
+  int start = 200;
+  int delay = 200;
 
   String? generatedContent;
   String? generatedImageUrl;
@@ -88,53 +93,59 @@ class _HomepageState extends State<Homepage> {
         child: Column(
           children: [
             //picture
-            Stack(
-              children: [
-                Center(
-                  child: Container(
-                    width: 120,
-                    height: 120,
-                    margin: EdgeInsets.only(top: 4),
+            ZoomIn(
+              child: Stack(
+                children: [
+                  Center(
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      margin: EdgeInsets.only(top: 4),
+                      decoration: BoxDecoration(
+                        color: Pallete.assistantCircleColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 123,
                     decoration: BoxDecoration(
-                      color: Pallete.assistantCircleColor,
                       shape: BoxShape.circle,
+                      image: DecorationImage(
+                        image: AssetImage('assets/images/virtualAssistant.png'),
+                      ),
                     ),
                   ),
-                ),
-                Container(
-                  height: 123,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/virtualAssistant.png'),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
             //chat
-            Visibility(
-              visible: generatedImageUrl == null,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                margin: EdgeInsets.symmetric(horizontal: 40).copyWith(top: 30),
-                decoration: BoxDecoration(
-                  border: Border.all(),
-                  color: Pallete.whiteColor,
-                  borderRadius: BorderRadius.circular(
-                    20,
-                  ).copyWith(topLeft: Radius.zero),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10.0),
-                  child: Text(
-                    generatedContent == null
-                        ? "Good Morning,what task can I do for you?"
-                        : generatedContent!,
-                    style: TextStyle(
-                      color: Pallete.mainFontColor,
-                      fontSize: generatedContent == null ? 20 : 18,
-                      fontFamily: 'Cera Pro',
+            FadeInRight(
+              child: Visibility(
+                visible: generatedImageUrl == null,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  margin: EdgeInsets.symmetric(
+                    horizontal: 40,
+                  ).copyWith(top: 30),
+                  decoration: BoxDecoration(
+                    border: Border.all(),
+                    color: Pallete.whiteColor,
+                    borderRadius: BorderRadius.circular(
+                      20,
+                    ).copyWith(topLeft: Radius.zero),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10.0),
+                    child: Text(
+                      generatedContent == null
+                          ? "Good Morning,what task can I do for you?"
+                          : generatedContent!,
+                      style: TextStyle(
+                        color: Pallete.mainFontColor,
+                        fontSize: generatedContent == null ? 20 : 18,
+                        fontFamily: 'Cera Pro',
+                      ),
                     ),
                   ),
                 ),
@@ -173,25 +184,34 @@ class _HomepageState extends State<Homepage> {
               child: Column(
                 children: [
                   //feature boxes
-                  Featurebox(
-                    color: Pallete.firstSuggestionBoxColor,
-                    headerText: 'ChatGPT',
-                    descText:
-                        'A smarter way to stay organized and informed with GPT',
+                  SlideInLeft(
+                    delay: Duration(milliseconds: start),
+                    child: Featurebox(
+                      color: Pallete.firstSuggestionBoxColor,
+                      headerText: 'ChatGPT',
+                      descText:
+                          'A smarter way to stay organized and informed with GPT',
+                    ),
                   ),
                   SizedBox(height: 10),
-                  Featurebox(
-                    color: Pallete.secondSuggestionBoxColor,
-                    headerText: 'Dell-E',
-                    descText:
-                        'Get inspired and stay creative with your personal assitant powerded by Dell-E',
+                  SlideInLeft(
+                    delay: Duration(milliseconds: start + delay),
+                    child: Featurebox(
+                      color: Pallete.secondSuggestionBoxColor,
+                      headerText: 'Dell-E',
+                      descText:
+                          'Get inspired and stay creative with your personal assitant powerded by Dell-E',
+                    ),
                   ),
                   SizedBox(height: 10),
-                  Featurebox(
-                    color: Pallete.thirdSuggestionBoxColor,
-                    headerText: 'Smart Voice Assistant',
-                    descText:
-                        'Get the best of both worlds with a voice assistant powerded by Dell-E and chatgpt',
+                  SlideInLeft(
+                    delay: Duration(milliseconds: start + 2 * delay),
+                    child: Featurebox(
+                      color: Pallete.thirdSuggestionBoxColor,
+                      headerText: 'Smart Voice Assistant',
+                      descText:
+                          'Get the best of both worlds with a voice assistant powerded by Dell-E and chatgpt',
+                    ),
                   ),
                 ],
               ),
@@ -199,32 +219,36 @@ class _HomepageState extends State<Homepage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Pallete.firstSuggestionBoxColor,
-        onPressed: () async {
-          //when u open app for first time nd clicks on button
-          if (await speechToText.hasPermission && speechToText.isNotListening) {
-            await startListening();
-            //app is already listening
-          } else if (speechToText.isListening) {
-            //check weather user is asking for question or generation of image
-            final speech = await openAIService.isArtAPI(lastWords);
-            if (speech.contains('https')) {
-              generatedImageUrl = speech;
-              generatedContent = null;
-              setState(() {});
+      floatingActionButton: ZoomIn(
+        delay: Duration(milliseconds: start + 3 * delay),
+        child: FloatingActionButton(
+          backgroundColor: Pallete.firstSuggestionBoxColor,
+          onPressed: () async {
+            //when u open app for first time nd clicks on button
+            if (await speechToText.hasPermission &&
+                speechToText.isNotListening) {
+              await startListening();
+              //app is already listening
+            } else if (speechToText.isListening) {
+              //check weather user is asking for question or generation of image
+              final speech = await openAIService.isArtAPI(lastWords);
+              if (speech.contains('https')) {
+                generatedImageUrl = speech;
+                generatedContent = null;
+                setState(() {});
+              } else {
+                generatedImageUrl = null;
+                generatedContent = speech;
+                setState(() {});
+                await systemSpeaks(speech);
+              }
+              await stopListening();
             } else {
-              generatedImageUrl = null;
-              generatedContent = speech;
-              setState(() {});
-              await systemSpeaks(speech);
+              initSpeechToText();
             }
-            await stopListening();
-          } else {
-            initSpeechToText();
-          }
-        },
-        child: Icon(speechToText.isListening ? Icons.stop : Icons.mic),
+          },
+          child: Icon(speechToText.isListening ? Icons.stop : Icons.mic),
+        ),
       ),
     );
   }
