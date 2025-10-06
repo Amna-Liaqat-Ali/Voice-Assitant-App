@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistant/FeatureBox.dart';
@@ -14,14 +15,26 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   final speechToText = SpeechToText();
+  final flutterTts = FlutterTts();
   String lastWords = '';
   final OpenAIService openAIService = OpenAIService();
+
+  String? generatedContent;
+  String? generatedImageUrl;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     initSpeechToText();
+    initTextToSpeech();
+  }
+
+  //plugin for text to speech
+  Future<void> initTextToSpeech() async {
+    //for ios only
+    await flutterTts.setSharedInstance(true);
+    setState(() {});
   }
 
   //adding plugin in function for speech to text convertor
@@ -49,12 +62,18 @@ class _HomepageState extends State<Homepage> {
     });
   }
 
+  //for system speaking from text
+  Future<void> systemSpeaks(String content) async {
+    await flutterTts.speak(content);
+  }
+
   //when leaves screen it is called to prevent resource leak
   @override
   void dispose() {
     // TODO: implement dispose
     super.dispose();
     speechToText.stop();
+    flutterTts.stop();
   }
 
   @override
@@ -107,10 +126,12 @@ class _HomepageState extends State<Homepage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10.0),
                 child: Text(
-                  "Good Morning,what task can I do for you?",
+                  generatedContent == null
+                      ? "Good Morning,what task can I do for you?"
+                      : generatedContent!,
                   style: TextStyle(
                     color: Pallete.mainFontColor,
-                    fontSize: 20,
+                    fontSize: generatedContent == null ? 20 : 18,
                     fontFamily: 'Cera Pro',
                   ),
                 ),
@@ -165,7 +186,16 @@ class _HomepageState extends State<Homepage> {
           } else if (speechToText.isListening) {
             //check weather user is asking for question or generation of image
             final speech = await openAIService.isArtAPI(lastWords);
-            print(speech);
+            if (speech.contains('https')) {
+              generatedImageUrl = speech;
+              generatedContent = null;
+              setState(() {});
+            } else {
+              generatedImageUrl = null;
+              generatedContent = speech;
+              setState(() {});
+              await systemSpeaks(speech);
+            }
             await stopListening();
           } else {
             initSpeechToText();

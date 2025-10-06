@@ -13,8 +13,8 @@ class OpenAIService {
       final res = await http.post(
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
-          'Content - Type': "application/json",
-          'Authorization': "Bearer $openAIAPIKey",
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $openAIAPIKey',
         },
         body: jsonEncode({
           "model": "gpt-5",
@@ -61,8 +61,8 @@ class OpenAIService {
       final res = await http.post(
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
-          'Content - Type': "application/json",
-          'Authorization': "Bearer $openAIAPIKey",
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $openAIAPIKey',
         },
         body: jsonEncode({"model": "gpt-5", "messages": messages}),
       );
@@ -91,8 +91,8 @@ class OpenAIService {
       final res = await http.post(
         Uri.parse('https://api.openai.com/v1/images/generations'),
         headers: {
-          'Content - Type': "application/json",
-          'Authorization': "Bearer $openAIAPIKey",
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $openAIAPIKey',
         },
         body: jsonEncode({'model': "gpt-image-1", 'prompt': prompt, 'n': 1}),
       );
