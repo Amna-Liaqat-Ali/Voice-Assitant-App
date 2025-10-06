@@ -1,16 +1,27 @@
-# voice_assistant
+# Auraly - Voice Assistant App
 
-A new Flutter project.
+Auraly is a Flutter-based voice assistant app that listens to your voice commands and responds intelligently with text or images.  
+It is designed to integrate with OpenAI APIs (ChatGPT for text and DALL-E for images) and provides a smooth, animated UI experience.  
 
-## Getting Started
+**Note:** The app may not show live ChatGPT or DALL-E responses if your OpenAI account has exceeded free trial credits or does not have an active API plan. In this case, the app displays placeholder responses.
 
-This project is a starting point for a Flutter application.
+---
+## Features
 
-A few resources to get you started if this is your first Flutter project:
+- Voice recognition using [`speech_to_text`]
+- Text-to-Speech using [`flutter_tts`]
+- Intelligent responses powered by ChatGPT (text)
+- Image generation powered by DALL-E (image URLs)
+- Animated UI components using [`animate_do`]
+---
+## UI Preview
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Here is the home screen UI of the app:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+![Home Screen](screenshots/home_page.png)
+
+> ⚠️ Note: Live ChatGPT/DALL-E responses are not shown due to API quota limitations, but the UI and voice features work as expected.
+
+## How to Run
+Add your API key in `lib/sample.dart` and run `flutter run`
+
