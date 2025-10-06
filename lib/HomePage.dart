@@ -113,65 +113,88 @@ class _HomepageState extends State<Homepage> {
               ],
             ),
             //chat
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              margin: EdgeInsets.symmetric(horizontal: 40).copyWith(top: 30),
-              decoration: BoxDecoration(
-                border: Border.all(),
-                color: Pallete.whiteColor,
-                borderRadius: BorderRadius.circular(
-                  20,
-                ).copyWith(topLeft: Radius.zero),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10.0),
-                child: Text(
-                  generatedContent == null
-                      ? "Good Morning,what task can I do for you?"
-                      : generatedContent!,
-                  style: TextStyle(
-                    color: Pallete.mainFontColor,
-                    fontSize: generatedContent == null ? 20 : 18,
-                    fontFamily: 'Cera Pro',
+            Visibility(
+              visible: generatedImageUrl == null,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                margin: EdgeInsets.symmetric(horizontal: 40).copyWith(top: 30),
+                decoration: BoxDecoration(
+                  border: Border.all(),
+                  color: Pallete.whiteColor,
+                  borderRadius: BorderRadius.circular(
+                    20,
+                  ).copyWith(topLeft: Radius.zero),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0),
+                  child: Text(
+                    generatedContent == null
+                        ? "Good Morning,what task can I do for you?"
+                        : generatedContent!,
+                    style: TextStyle(
+                      color: Pallete.mainFontColor,
+                      fontSize: generatedContent == null ? 20 : 18,
+                      fontFamily: 'Cera Pro',
+                    ),
                   ),
                 ),
               ),
             ),
-
-            Container(
-              padding: EdgeInsets.all(10),
-              margin: EdgeInsets.only(left: 20, top: 10),
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Here are a few features',
-                style: TextStyle(
-                  fontFamily: 'Cera Pro',
-                  fontSize: 20,
-                  color: Pallete.mainFontColor,
-                  fontWeight: FontWeight.bold,
+            //image will be here generated from dall-E
+            if (generatedImageUrl != null)
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.network(generatedImageUrl!),
+                ),
+              ),
+            Visibility(
+              //when chatgpt shows data don't show these boxes
+              visible: generatedContent == null && generatedImageUrl == null,
+              child: Container(
+                padding: EdgeInsets.all(10),
+                margin: EdgeInsets.only(left: 20, top: 10),
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Here are a few features',
+                  style: TextStyle(
+                    fontFamily: 'Cera Pro',
+                    fontSize: 20,
+                    color: Pallete.mainFontColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-
-            //feature boxes
-            Featurebox(
-              color: Pallete.firstSuggestionBoxColor,
-              headerText: 'ChatGPT',
-              descText: 'A smarter way to stay organized and informed with GPT',
-            ),
-            SizedBox(height: 10),
-            Featurebox(
-              color: Pallete.secondSuggestionBoxColor,
-              headerText: 'Dell-E',
-              descText:
-                  'Get inspired and stay creative with your personal assitant powerded by Dell-E',
-            ),
-            SizedBox(height: 10),
-            Featurebox(
-              color: Pallete.thirdSuggestionBoxColor,
-              headerText: 'Smart Voice Assistant',
-              descText:
-                  'Get the best of both worlds with a voice assistant powerded by Dell-E and chatgpt',
+            Visibility(
+              //when chatgpt shows data don't show these boxes
+              visible: generatedContent == null && generatedImageUrl == null,
+              child: Column(
+                children: [
+                  //feature boxes
+                  Featurebox(
+                    color: Pallete.firstSuggestionBoxColor,
+                    headerText: 'ChatGPT',
+                    descText:
+                        'A smarter way to stay organized and informed with GPT',
+                  ),
+                  SizedBox(height: 10),
+                  Featurebox(
+                    color: Pallete.secondSuggestionBoxColor,
+                    headerText: 'Dell-E',
+                    descText:
+                        'Get inspired and stay creative with your personal assitant powerded by Dell-E',
+                  ),
+                  SizedBox(height: 10),
+                  Featurebox(
+                    color: Pallete.thirdSuggestionBoxColor,
+                    headerText: 'Smart Voice Assistant',
+                    descText:
+                        'Get the best of both worlds with a voice assistant powerded by Dell-E and chatgpt',
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -201,7 +224,7 @@ class _HomepageState extends State<Homepage> {
             initSpeechToText();
           }
         },
-        child: Icon(Icons.mic),
+        child: Icon(speechToText.isListening ? Icons.stop : Icons.mic),
       ),
     );
   }
