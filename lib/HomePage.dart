@@ -37,8 +37,21 @@ class _HomepageState extends State<Homepage> {
   final List<ChatMessage> chatHistory = [];
   final chatHistoryStore = ChatHistoryStore();
   final textController = TextEditingController();
+  final scrollController = ScrollController();
   bool isProcessing = false;
   bool isSpeaking = false;
+
+  //keeps the latest message in view as the conversation grows or streams in
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!scrollController.hasClients) return;
+      scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   @override
   void initState() {
@@ -54,6 +67,7 @@ class _HomepageState extends State<Homepage> {
     if (saved.isEmpty) return;
     geminiService.restoreHistory(saved);
     setState(() => chatHistory.addAll(saved));
+    _scrollToBottom();
   }
 
   //wipes the current conversation, both on screen and on disk
@@ -125,6 +139,7 @@ class _HomepageState extends State<Homepage> {
     speechToText.stop();
     flutterTts.stop();
     textController.dispose();
+    scrollController.dispose();
   }
 
   //shared by both the mic flow and the typed-message flow
@@ -135,6 +150,7 @@ class _HomepageState extends State<Homepage> {
       chatHistory.add(const ChatMessage(role: ChatRole.assistant, text: ''));
       isProcessing = true;
     });
+    _scrollToBottom();
     try {
       String speech = '';
       await for (final partial in geminiService.getResponseStream(
@@ -147,6 +163,7 @@ class _HomepageState extends State<Homepage> {
             text: speech,
           );
         });
+        _scrollToBottom();
       }
       await chatHistoryStore.save(chatHistory);
       await systemSpeaks(speech);
@@ -211,6 +228,7 @@ class _HomepageState extends State<Homepage> {
         ],
       ),
       body: SingleChildScrollView(
+        controller: scrollController,
         child: Column(
           children: [
             //picture
