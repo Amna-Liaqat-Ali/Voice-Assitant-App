@@ -48,6 +48,7 @@ app.*.map.json
 # Machine-specific, never commit
 android/local.properties
 android/.gradle/
+android/.kotlin/
 android/key.properties
 ios/Flutter/Flutter.podspec
 **/Pods/

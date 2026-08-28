@@ -12,7 +12,20 @@
           "package_name": "com.example.voice_assistant"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "536378855239-p4j65n1rkbqcf05ogmlfs13jtf55ofba.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.voice_assistant",
+            "certificate_hash": "a1b0cdd99f7a487818f290401a06c2b72183ce4c"
+          }
+        },
+        {
+          "client_id": "536378855239-8dpc1ppfp3647l6b21bhm0nqasd4og4t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAzojc5f8teCWcbWcj401383f0r4YH7ei8"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "536378855239-8dpc1ppfp3647l6b21bhm0nqasd4og4t.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "536378855239-4qkc5viatg6lcgt50a1gfb75l4e2qjvs.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.voiceAssistant"
+              }
+            }
+          ]
         }
       }
     }

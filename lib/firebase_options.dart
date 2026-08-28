@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -56,13 +53,22 @@ class DefaultFirebaseOptions {
     projectId: 'auraly-voice-assistant',
     storageBucket: 'auraly-voice-assistant.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA8_mOyraAGNjxtG6QmX8JyIcJZnWOXyu4',
     appId: '1:536378855239:ios:8a9dfff862405eaafd8662',
     messagingSenderId: '536378855239',
     projectId: 'auraly-voice-assistant',
     storageBucket: 'auraly-voice-assistant.firebasestorage.app',
+    androidClientId: '536378855239-p4j65n1rkbqcf05ogmlfs13jtf55ofba.apps.googleusercontent.com',
+    iosClientId: '536378855239-4qkc5viatg6lcgt50a1gfb75l4e2qjvs.apps.googleusercontent.com',
     iosBundleId: 'com.example.voiceAssistant',
+  );
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyDC6ONgm3kBgBNrQYWV5q5osZDrK1gei_4',
+    appId: '1:536378855239:web:26068299de3a5c89fd8662',
+    messagingSenderId: '536378855239',
+    projectId: 'auraly-voice-assistant',
+    authDomain: 'auraly-voice-assistant.firebaseapp.com',
+    storageBucket: 'auraly-voice-assistant.firebasestorage.app',
   );
 }
