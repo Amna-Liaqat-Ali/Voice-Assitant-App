@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:voice_assistant/chat_message.dart';
 import 'package:voice_assistant/secrets.dart';
+import 'package:voice_assistant/settings_page.dart';
 
 class GeminiService {
   //stores conversation history in Gemini's "contents" format
@@ -39,9 +40,10 @@ class GeminiService {
         {'text': prompt},
       ],
     });
+    final apiKey = await loadApiKeyOverride() ?? geminiAPIKey;
     final res = await http.post(
       Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=$geminiAPIKey',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=$apiKey',
       ),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'contents': messages}),

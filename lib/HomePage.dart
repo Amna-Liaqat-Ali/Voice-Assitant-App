@@ -8,6 +8,7 @@ import 'package:voice_assistant/chat_history_store.dart';
 import 'package:voice_assistant/chat_message.dart';
 import 'package:voice_assistant/gemini_service.dart';
 import 'package:voice_assistant/pallete.dart';
+import 'package:voice_assistant/settings_page.dart';
 
 class Homepage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -122,7 +123,13 @@ class _HomepageState extends State<Homepage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Auraly'),
-        leading: Icon(Icons.menu),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          tooltip: 'Settings',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const SettingsPage()),
+          ),
+        ),
         centerTitle: true,
         actions: [
           if (isSpeaking)
