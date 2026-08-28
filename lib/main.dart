@@ -1,12 +1,16 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voice_assistant/HomePage.dart';
-import 'package:voice_assistant/api_key_store.dart';
+import 'package:voice_assistant/firebase_options.dart';
+import 'package:voice_assistant/google_auth_service.dart';
 import 'package:voice_assistant/login_page.dart';
 import 'package:voice_assistant/onboarding_page.dart';
 import 'package:voice_assistant/pallete.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -20,27 +24,23 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   static const _themeModeKey = 'theme_mode';
   static const _onboardingCompleteKey = 'onboarding_complete';
+  final _authService = GoogleAuthService();
   ThemeMode themeMode = ThemeMode.light;
   bool? onboardingComplete;
-  bool? hasApiKey;
+  bool? isSignedIn;
 
   @override
   void initState() {
     super.initState();
     _loadThemeMode();
     _loadOnboardingStatus();
-    _loadApiKeyStatus();
+    setState(() => isSignedIn = _authService.currentUser != null);
+    _authService.authStateChanges.listen(
+      (user) => setState(() => isSignedIn = user != null),
+    );
   }
 
-  Future<void> _loadApiKeyStatus() async {
-    final key = await loadApiKey();
-    setState(() => hasApiKey = key != null && key.isNotEmpty);
-  }
-
-  Future<void> _signOut() async {
-    await clearApiKey();
-    setState(() => hasApiKey = false);
-  }
+  Future<void> _signOut() => _authService.signOut();
 
   Future<void> _loadThemeMode() async {
     final prefs = await SharedPreferences.getInstance();
@@ -82,13 +82,13 @@ class _MyAppState extends State<MyApp> {
         scaffoldBackgroundColor: Pallete.darkBackgroundColor,
         appBarTheme: AppBarTheme(backgroundColor: Pallete.darkBackgroundColor),
       ),
-      home: switch ((onboardingComplete, hasApiKey)) {
+      home: switch ((onboardingComplete, isSignedIn)) {
         (null, _) || (_, null) => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
         (false, _) => OnboardingPage(onComplete: _completeOnboarding),
         (true, false) => LoginPage(
-          onLoggedIn: () => setState(() => hasApiKey = true),
+          onLoggedIn: () => setState(() => isSignedIn = true),
         ),
         (true, true) => Homepage(
           onToggleTheme: toggleThemeMode,

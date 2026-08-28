@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -224,9 +225,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 16),
 
                 _SectionTitle('Account'),
+                if (FirebaseAuth.instance.currentUser?.email != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'Signed in as ${FirebaseAuth.instance.currentUser!.email}',
+                      style: TextStyle(color: Pallete.fontColor(context)),
+                    ),
+                  ),
                 OutlinedButton.icon(
-                  icon: const Icon(Icons.key_off_outlined),
-                  label: const Text('Change API key'),
+                  icon: const Icon(Icons.logout_outlined),
+                  label: const Text('Sign out'),
                   onPressed: widget.onSignOut,
                 ),
                 const SizedBox(height: 16),

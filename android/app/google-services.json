@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "536378855239",
+    "project_id": "auraly-voice-assistant",
+    "storage_bucket": "auraly-voice-assistant.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:536378855239:android:dcf853346ae0f233fd8662",
+        "android_client_info": {
+          "package_name": "com.example.voice_assistant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzojc5f8teCWcbWcj401383f0r4YH7ei8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
