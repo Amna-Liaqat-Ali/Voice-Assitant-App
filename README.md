@@ -34,3 +34,15 @@ This project is wired to a Firebase project (`auraly-voice-assistant`) via `lib/
 2. In the [Firebase Console](https://console.firebase.google.com) → Authentication → Sign-in method, enable **Google** as a sign-in provider.
 3. In the Firebase Console → Build → AI Logic, set up the **Gemini Developer API** backend (has a free tier).
 4. For Android, add your debug and release SHA-1/SHA-256 fingerprints under Project Settings → Your apps (get the debug one with `cd android && ./gradlew signingReport`).
+
+## Deploying the web build
+
+The live deployment is at https://auraly-voice-assistant.vercel.app.
+
+**Always use `./deploy_web.sh` to deploy** - never run `vercel --prod` directly from the project root. This project's source is Dart/Flutter, which Vercel cannot build; only the compiled output in `build/web` is deployable. Running `vercel` from the repo root uploads the Dart source instead and breaks the site with a 404.
+
+```
+./deploy_web.sh
+```
+
+This builds the web release and deploys `build/web` in one step.
