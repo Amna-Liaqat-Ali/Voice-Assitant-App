@@ -25,6 +25,7 @@ class _HomepageState extends State<Homepage> {
   int delay = 200;
 
   String? generatedContent;
+  bool isProcessing = false;
 
   @override
   void initState() {
@@ -204,13 +205,12 @@ class _HomepageState extends State<Homepage> {
         child: FloatingActionButton(
           backgroundColor: Pallete.firstSuggestionBoxColor,
           onPressed: () async {
-            //when u open app for first time nd clicks on button
-            if (await speechToText.hasPermission &&
-                speechToText.isNotListening) {
-              await startListening();
-              //app is already listening
-            } else if (speechToText.isListening) {
+            //ignore taps while a request is already in flight
+            if (isProcessing) return;
+
+            if (speechToText.isListening) {
               await stopListening();
+              setState(() => isProcessing = true);
               try {
                 final speech = await geminiService.getResponse(lastWords);
                 generatedContent = speech;
@@ -222,12 +222,23 @@ class _HomepageState extends State<Homepage> {
                     SnackBar(content: Text(e.toString())),
                   );
                 }
+              } finally {
+                setState(() => isProcessing = false);
               }
             } else {
-              initSpeechToText();
+              await startListening();
             }
           },
-          child: Icon(speechToText.isListening ? Icons.stop : Icons.mic),
+          child: isProcessing
+              ? SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Pallete.mainFontColor,
+                  ),
+                )
+              : Icon(speechToText.isListening ? Icons.stop : Icons.mic),
         ),
       ),
     );
