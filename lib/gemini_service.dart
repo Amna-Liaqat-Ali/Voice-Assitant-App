@@ -1,13 +1,45 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:voice_assistant/chat_message.dart';
 import 'package:voice_assistant/secrets.dart';
 import 'package:voice_assistant/settings_page.dart';
 
+//status codes worth retrying: rate limited or the model is momentarily overloaded
+const _retryableStatusCodes = {429, 503};
+
 class GeminiService {
   //stores conversation history in Gemini's "contents" format
   final List<Map<String, dynamic>> messages = [];
+
+  //builds and sends a fresh request each attempt, retrying with backoff on
+  //network failures or transient (429/503) server errors, so a flaky
+  //connection or a brief model overload doesn't surface as a hard error
+  Future<http.StreamedResponse> _sendWithRetry(
+    http.Request Function() buildRequest, {
+    int maxAttempts = 3,
+  }) async {
+    for (var attempt = 1; ; attempt++) {
+      final isLastAttempt = attempt >= maxAttempts;
+      try {
+        final response = await http.Client().send(buildRequest());
+        if (isLastAttempt || !_retryableStatusCodes.contains(response.statusCode)) {
+          return response;
+        }
+      } on SocketException {
+        if (isLastAttempt) {
+          throw Exception(
+            'No internet connection. Please check your network and try again.',
+          );
+        }
+      } on http.ClientException {
+        if (isLastAttempt) rethrow;
+      }
+      await Future.delayed(Duration(seconds: attempt));
+    }
+  }
 
   //rebuilds Gemini's conversation context from previously saved chat history,
   //so a restored session still remembers what was said
@@ -24,9 +56,6 @@ class GeminiService {
   }
 
   //extracts a readable message from a Gemini error response body
-  String _errorMessageFrom(http.Response res) =>
-      _errorMessageFromBody(res.body, res.statusCode);
-
   String _errorMessageFromBody(String body, int statusCode) {
     try {
       final decoded = jsonDecode(body);
@@ -46,16 +75,17 @@ class GeminiService {
       ],
     });
     final apiKey = await loadApiKeyOverride() ?? geminiAPIKey;
-    final request = http.Request(
-      'POST',
-      Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:streamGenerateContent?alt=sse&key=$apiKey',
-      ),
-    );
-    request.headers['Content-Type'] = 'application/json';
-    request.body = jsonEncode({'contents': messages});
-
-    final streamedResponse = await http.Client().send(request);
+    final streamedResponse = await _sendWithRetry(() {
+      final request = http.Request(
+        'POST',
+        Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:streamGenerateContent?alt=sse&key=$apiKey',
+        ),
+      );
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({'contents': messages});
+      return request;
+    });
     if (streamedResponse.statusCode != 200) {
       final body = await streamedResponse.stream.bytesToString();
       throw Exception(_errorMessageFromBody(body, streamedResponse.statusCode));
@@ -85,33 +115,4 @@ class GeminiService {
     });
   }
 
-  Future<String> getResponse(String prompt) async {
-    messages.add({
-      'role': 'user',
-      'parts': [
-        {'text': prompt},
-      ],
-    });
-    final apiKey = await loadApiKeyOverride() ?? geminiAPIKey;
-    final res = await http.post(
-      Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=$apiKey',
-      ),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'contents': messages}),
-    );
-    if (res.statusCode != 200) {
-      throw Exception(_errorMessageFrom(res));
-    }
-    String content =
-        jsonDecode(res.body)['candidates'][0]['content']['parts'][0]['text'];
-    content = content.trim();
-    messages.add({
-      'role': 'model',
-      'parts': [
-        {'text': content},
-      ],
-    });
-    return content;
-  }
 }
