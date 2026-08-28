@@ -237,7 +237,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: const Icon(Icons.logout_outlined),
                   label: const Text('Sign out'),
                   onPressed: () async {
-                    await widget.onSignOut();
+                    try {
+                      await widget.onSignOut();
+                    } catch (_) {
+                      // Still navigate back below so the UI doesn't feel stuck.
+                    }
                     if (context.mounted) {
                       Navigator.of(context).popUntil((route) => route.isFirst);
                     }
