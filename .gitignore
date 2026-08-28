@@ -28,6 +28,9 @@ migrate_working_dir/
 **/ios/Flutter/.last_build_id
 .dart_tool/
 .flutter-plugins-dependencies
+
+# Secrets - never commit real API keys
+lib/secrets.dart
 .pub-cache/
 .pub/
 /build/

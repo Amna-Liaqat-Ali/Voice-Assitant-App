@@ -4,7 +4,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistant/FeatureBox.dart';
-import 'package:voice_assistant/openai_service.dart';
+import 'package:voice_assistant/gemini_service.dart';
 import 'package:voice_assistant/pallete.dart';
 
 class Homepage extends StatefulWidget {
@@ -18,14 +18,13 @@ class _HomepageState extends State<Homepage> {
   final speechToText = SpeechToText();
   final flutterTts = FlutterTts();
   String lastWords = '';
-  final OpenAIService openAIService = OpenAIService();
+  final GeminiService geminiService = GeminiService();
 
   //timings for animations of feature boxes
   int start = 200;
   int delay = 200;
 
   String? generatedContent;
-  String? generatedImageUrl;
 
   @override
   void initState() {
@@ -122,7 +121,7 @@ class _HomepageState extends State<Homepage> {
             //chat
             FadeInRight(
               child: Visibility(
-                visible: generatedImageUrl == null,
+                visible: true,
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   margin: EdgeInsets.symmetric(
@@ -151,18 +150,9 @@ class _HomepageState extends State<Homepage> {
                 ),
               ),
             ),
-            //image will be here generated from dall-E
-            if (generatedImageUrl != null)
-              Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.network(generatedImageUrl!),
-                ),
-              ),
             Visibility(
-              //when chatgpt shows data don't show these boxes
-              visible: generatedContent == null && generatedImageUrl == null,
+              //when gemini shows data don't show these boxes
+              visible: generatedContent == null,
               child: Container(
                 padding: EdgeInsets.all(10),
                 margin: EdgeInsets.only(left: 20, top: 10),
@@ -179,8 +169,8 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
             Visibility(
-              //when chatgpt shows data don't show these boxes
-              visible: generatedContent == null && generatedImageUrl == null,
+              //when gemini shows data don't show these boxes
+              visible: generatedContent == null,
               child: Column(
                 children: [
                   //feature boxes
@@ -188,29 +178,19 @@ class _HomepageState extends State<Homepage> {
                     delay: Duration(milliseconds: start),
                     child: Featurebox(
                       color: Pallete.firstSuggestionBoxColor,
-                      headerText: 'ChatGPT',
+                      headerText: 'Gemini AI',
                       descText:
-                          'A smarter way to stay organized and informed with GPT',
+                          'A smarter way to stay organized and informed, powered by Google Gemini',
                     ),
                   ),
                   SizedBox(height: 10),
                   SlideInLeft(
                     delay: Duration(milliseconds: start + delay),
                     child: Featurebox(
-                      color: Pallete.secondSuggestionBoxColor,
-                      headerText: 'Dell-E',
-                      descText:
-                          'Get inspired and stay creative with your personal assitant powerded by Dell-E',
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  SlideInLeft(
-                    delay: Duration(milliseconds: start + 2 * delay),
-                    child: Featurebox(
                       color: Pallete.thirdSuggestionBoxColor,
                       headerText: 'Smart Voice Assistant',
                       descText:
-                          'Get the best of both worlds with a voice assistant powerded by Dell-E and chatgpt',
+                          'Speak naturally and get spoken answers back, powered by Gemini',
                     ),
                   ),
                 ],
@@ -230,19 +210,19 @@ class _HomepageState extends State<Homepage> {
               await startListening();
               //app is already listening
             } else if (speechToText.isListening) {
-              //check weather user is asking for question or generation of image
-              final speech = await openAIService.isArtAPI(lastWords);
-              if (speech.contains('https')) {
-                generatedImageUrl = speech;
-                generatedContent = null;
-                setState(() {});
-              } else {
-                generatedImageUrl = null;
+              await stopListening();
+              try {
+                final speech = await geminiService.getResponse(lastWords);
                 generatedContent = speech;
                 setState(() {});
                 await systemSpeaks(speech);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString())),
+                  );
+                }
               }
-              await stopListening();
             } else {
               initSpeechToText();
             }

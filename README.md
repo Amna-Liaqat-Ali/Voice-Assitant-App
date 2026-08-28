@@ -23,5 +23,9 @@ Here is the home screen UI of the app:
 > ⚠️ Note: Live ChatGPT/DALL-E responses are not shown due to API quota limitations, but the UI and voice features work as expected.
 
 ## How to Run
-Add your API key in `lib/sample.dart` and run `flutter run`
+1. Copy `lib/secrets.example.dart` to `lib/secrets.dart`.
+2. Get a free Gemini API key at https://aistudio.google.com/apikey and paste it into `lib/secrets.dart`.
+3. Run `flutter pub get` then `flutter run`.
+
+`lib/secrets.dart` is gitignored, so your key never gets committed.
 
