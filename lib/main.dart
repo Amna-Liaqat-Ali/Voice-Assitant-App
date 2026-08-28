@@ -21,10 +21,12 @@ void main() async {
   runApp(const MyApp());
 }
 
+//the public reCAPTCHA Enterprise site key registered for this app in
+//Firebase Console > App Check > voice_assistant (web)
+const _recaptchaEnterpriseSiteKey = '6LfTtp0tAAAAADJhcpWRPxTQQGhzkHbioQZhBPwv';
+
 //required by Firebase AI Logic (Gemini) to verify requests come from this
-//genuine app build, not a script hitting the backend directly.
-//TODO: swap WebDebugProvider for ReCaptchaV3Provider once a reCAPTCHA site
-//key is registered in Firebase Console for production use.
+//genuine app build, not a script hitting the backend directly
 Future<void> _activateAppCheck() async {
   try {
     await FirebaseAppCheck.instance.activate(
@@ -34,7 +36,7 @@ Future<void> _activateAppCheck() async {
       providerApple: kDebugMode
           ? AppleDebugProvider()
           : AppleAppAttestProvider(),
-      providerWeb: WebDebugProvider(),
+      providerWeb: ReCaptchaEnterpriseProvider(_recaptchaEnterpriseSiteKey),
     );
   } catch (_) {
     // Gemini calls will surface their own error if App Check is unavailable.
