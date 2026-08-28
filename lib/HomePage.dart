@@ -16,11 +16,13 @@ import 'package:voice_assistant/settings_page.dart';
 class Homepage extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final ThemeMode themeMode;
+  final VoidCallback onSignOut;
 
   const Homepage({
     super.key,
     required this.onToggleTheme,
     required this.themeMode,
+    required this.onSignOut,
   });
 
   @override
@@ -220,6 +222,7 @@ class _HomepageState extends State<Homepage> {
                 themeMode: widget.themeMode,
                 onToggleTheme: widget.onToggleTheme,
                 onClearChat: clearChatHistory,
+                onSignOut: widget.onSignOut,
               ),
             ),
           ),

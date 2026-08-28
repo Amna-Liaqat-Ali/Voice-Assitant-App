@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:voice_assistant/api_key_store.dart';
 import 'package:voice_assistant/chat_message.dart';
-import 'package:voice_assistant/secrets.dart';
 
 //status codes worth retrying: rate limited or the model is momentarily overloaded
 const _retryableStatusCodes = {429, 503};
@@ -73,11 +73,15 @@ class GeminiService {
         {'text': prompt},
       ],
     });
+    final apiKey = await loadApiKey();
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('No Gemini API key found. Please sign in again.');
+    }
     final streamedResponse = await _sendWithRetry(() {
       final request = http.Request(
         'POST',
         Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:streamGenerateContent?alt=sse&key=$geminiAPIKey',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:streamGenerateContent?alt=sse&key=$apiKey',
         ),
       );
       request.headers['Content-Type'] = 'application/json';

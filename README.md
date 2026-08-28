@@ -1,18 +1,17 @@
 # Auraly - Voice Assistant App
 
-Auraly is a Flutter-based voice assistant app that listens to your voice commands and responds intelligently with text or images.  
-It is designed to integrate with OpenAI APIs (ChatGPT for text and DALL-E for images) and provides a smooth, animated UI experience.  
-
-**Note:** The app may not show live ChatGPT or DALL-E responses if your OpenAI account has exceeded free trial credits or does not have an active API plan. In this case, the app displays placeholder responses.
+Auraly is a Flutter-based voice assistant app that listens to your voice (or takes typed input) and responds intelligently, powered by Google Gemini.
 
 ---
 ## Features
 
-- Voice recognition using [`speech_to_text`]
-- Text-to-Speech using [`flutter_tts`]
-- Intelligent responses powered by ChatGPT (text)
-- Image generation powered by DALL-E (image URLs)
+- Voice recognition using [`speech_to_text`], with a typed-message fallback
+- Text-to-Speech using [`flutter_tts`], with adjustable rate, pitch, and voice
+- Streamed, markdown-rendered responses powered by Google Gemini
+- Persisted conversation history, dark mode, and multi-language support
+- Your own Gemini API key, stored encrypted on-device - never bundled in the app
 - Animated UI components using [`animate_do`]
+
 ---
 ## UI Preview
 
@@ -20,12 +19,8 @@ Here is the home screen UI of the app:
 
 ![Home Screen](screenshots/home_page.png)
 
-> ⚠️ Note: Live ChatGPT/DALL-E responses are not shown due to API quota limitations, but the UI and voice features work as expected.
-
 ## How to Run
-1. Copy `lib/secrets.example.dart` to `lib/secrets.dart`.
-2. Get a free Gemini API key at https://aistudio.google.com/apikey and paste it into `lib/secrets.dart`.
-3. Run `flutter pub get` then `flutter run`.
 
-`lib/secrets.dart` is gitignored, so your key never gets committed.
-
+1. Run `flutter pub get`.
+2. Run `flutter run`.
+3. On first launch, grant microphone access, then get a free API key at https://aistudio.google.com/apikey and paste it into the sign-in screen. It's stored encrypted on your device only, and can be changed later from Settings.

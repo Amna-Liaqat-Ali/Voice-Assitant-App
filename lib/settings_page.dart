@@ -23,12 +23,14 @@ class SettingsPage extends StatefulWidget {
   final ThemeMode themeMode;
   final VoidCallback onToggleTheme;
   final VoidCallback onClearChat;
+  final VoidCallback onSignOut;
 
   const SettingsPage({
     super.key,
     required this.themeMode,
     required this.onToggleTheme,
     required this.onClearChat,
+    required this.onSignOut,
   });
 
   @override
@@ -212,6 +214,14 @@ class _SettingsPageState extends State<SettingsPage> {
                       const SnackBar(content: Text('Chat history cleared')),
                     );
                   },
+                ),
+                const SizedBox(height: 16),
+
+                _SectionTitle('Account'),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.key_off_outlined),
+                  label: const Text('Change API key'),
+                  onPressed: widget.onSignOut,
                 ),
                 const SizedBox(height: 16),
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voice_assistant/HomePage.dart';
+import 'package:voice_assistant/api_key_store.dart';
+import 'package:voice_assistant/login_page.dart';
 import 'package:voice_assistant/onboarding_page.dart';
 import 'package:voice_assistant/pallete.dart';
 
@@ -20,12 +22,24 @@ class _MyAppState extends State<MyApp> {
   static const _onboardingCompleteKey = 'onboarding_complete';
   ThemeMode themeMode = ThemeMode.light;
   bool? onboardingComplete;
+  bool? hasApiKey;
 
   @override
   void initState() {
     super.initState();
     _loadThemeMode();
     _loadOnboardingStatus();
+    _loadApiKeyStatus();
+  }
+
+  Future<void> _loadApiKeyStatus() async {
+    final key = await loadApiKey();
+    setState(() => hasApiKey = key != null && key.isNotEmpty);
+  }
+
+  Future<void> _signOut() async {
+    await clearApiKey();
+    setState(() => hasApiKey = false);
   }
 
   Future<void> _loadThemeMode() async {
@@ -68,10 +82,19 @@ class _MyAppState extends State<MyApp> {
         scaffoldBackgroundColor: Pallete.darkBackgroundColor,
         appBarTheme: AppBarTheme(backgroundColor: Pallete.darkBackgroundColor),
       ),
-      home: switch (onboardingComplete) {
-        null => const Scaffold(body: Center(child: CircularProgressIndicator())),
-        false => OnboardingPage(onComplete: _completeOnboarding),
-        true => Homepage(onToggleTheme: toggleThemeMode, themeMode: themeMode),
+      home: switch ((onboardingComplete, hasApiKey)) {
+        (null, _) || (_, null) => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+        (false, _) => OnboardingPage(onComplete: _completeOnboarding),
+        (true, false) => LoginPage(
+          onLoggedIn: () => setState(() => hasApiKey = true),
+        ),
+        (true, true) => Homepage(
+          onToggleTheme: toggleThemeMode,
+          themeMode: themeMode,
+          onSignOut: _signOut,
+        ),
       },
     );
   }
