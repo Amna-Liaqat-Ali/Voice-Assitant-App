@@ -1,30 +1,21 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:voice_assistant/main.dart';
+import 'package:voice_assistant/chat_message.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('ChatMessage', () {
+    test('round-trips through JSON', () {
+      const message = ChatMessage(role: ChatRole.user, text: 'Hello there');
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      final restored = ChatMessage.fromJson(message.toJson());
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+      expect(restored.role, ChatRole.user);
+      expect(restored.text, 'Hello there');
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('defaults an unrecognized role to assistant', () {
+      final restored = ChatMessage.fromJson({'role': 'model', 'text': 'Hi'});
+
+      expect(restored.role, ChatRole.assistant);
+    });
   });
 }
