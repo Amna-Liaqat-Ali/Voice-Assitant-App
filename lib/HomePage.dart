@@ -7,8 +7,9 @@ import 'package:share_plus/share_plus.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistant/FeatureBox.dart';
-import 'package:voice_assistant/chat_history_store.dart';
 import 'package:voice_assistant/chat_message.dart';
+import 'package:voice_assistant/conversation.dart';
+import 'package:voice_assistant/conversation_store.dart';
 import 'package:voice_assistant/gemini_service.dart';
 import 'package:voice_assistant/pallete.dart';
 import 'package:voice_assistant/settings_page.dart';
@@ -40,7 +41,9 @@ class _HomepageState extends State<Homepage> {
   int delay = 200;
 
   final List<ChatMessage> chatHistory = [];
-  final chatHistoryStore = ChatHistoryStore();
+  final conversationStore = ConversationStore();
+  List<Conversation> conversations = [];
+  String currentConversationId = '';
   final textController = TextEditingController();
   final scrollController = ScrollController();
   bool isProcessing = false;
@@ -63,23 +66,116 @@ class _HomepageState extends State<Homepage> {
     super.initState();
     initSpeechToText();
     initTextToSpeech();
-    loadChatHistory();
+    loadConversations();
   }
 
-  //restores a previous conversation from disk, if any
-  Future<void> loadChatHistory() async {
-    final saved = await chatHistoryStore.load();
-    if (saved.isEmpty) return;
-    geminiService.restoreHistory(saved);
-    setState(() => chatHistory.addAll(saved));
+  String _newConversationId() =>
+      DateTime.now().microsecondsSinceEpoch.toString();
+
+  //restores saved conversations from disk, opening the most recent one
+  Future<void> loadConversations() async {
+    final loaded = await conversationStore.loadAll();
+    setState(() {
+      conversations = loaded;
+      if (loaded.isNotEmpty) {
+        currentConversationId = loaded.first.id;
+        chatHistory.addAll(loaded.first.messages);
+      } else {
+        currentConversationId = _newConversationId();
+      }
+    });
+    if (chatHistory.isNotEmpty) geminiService.restoreHistory(chatHistory);
     _scrollToBottom();
   }
 
-  //wipes the current conversation, both on screen and on disk
-  Future<void> clearChatHistory() async {
-    await chatHistoryStore.clear();
+  //saves the current conversation, inserting it if it's new and keeping
+  //the list ordered by most recently updated
+  Future<void> _persistCurrentConversation() async {
+    final firstUserMessage = chatHistory
+        .firstWhere(
+          (m) => m.role == ChatRole.user,
+          orElse: () => const ChatMessage(role: ChatRole.user, text: ''),
+        )
+        .text;
+    final updated = Conversation(
+      id: currentConversationId,
+      title: Conversation.titleFrom(firstUserMessage),
+      messages: List.of(chatHistory),
+      updatedAt: DateTime.now(),
+    );
+    setState(() {
+      conversations.removeWhere((c) => c.id == currentConversationId);
+      conversations.insert(0, updated);
+    });
+    await conversationStore.saveAll(conversations);
+  }
+
+  //starts a fresh conversation, leaving the current one saved as-is
+  void startNewConversation() {
+    if (chatHistory.isEmpty) return;
+    setState(() {
+      currentConversationId = _newConversationId();
+      chatHistory.clear();
+    });
     geminiService.restoreHistory([]);
-    setState(() => chatHistory.clear());
+  }
+
+  //switches the visible chat to a previously saved conversation
+  void switchConversation(String id) {
+    if (id == currentConversationId) return;
+    final convo = conversations.firstWhere((c) => c.id == id);
+    setState(() {
+      currentConversationId = id;
+      chatHistory
+        ..clear()
+        ..addAll(convo.messages);
+    });
+    geminiService.restoreHistory(chatHistory);
+    _scrollToBottom();
+  }
+
+  //deletes one saved conversation, moving off it first if it's the active one
+  Future<void> deleteConversation(String id) async {
+    setState(() => conversations.removeWhere((c) => c.id == id));
+    await conversationStore.saveAll(conversations);
+    if (id != currentConversationId) return;
+    if (conversations.isNotEmpty) {
+      final next = conversations.first;
+      setState(() {
+        currentConversationId = next.id;
+        chatHistory
+          ..clear()
+          ..addAll(next.messages);
+      });
+      geminiService.restoreHistory(chatHistory);
+    } else {
+      setState(() {
+        currentConversationId = _newConversationId();
+        chatHistory.clear();
+      });
+      geminiService.restoreHistory([]);
+    }
+  }
+
+  //shares a saved conversation's full transcript
+  Future<void> shareConversation(Conversation convo) async {
+    final transcript = convo.messages
+        .map((m) => '${m.role == ChatRole.user ? 'You' : 'Auraly'}: ${m.text}')
+        .join('\n\n');
+    await SharePlus.instance.share(
+      ShareParams(text: transcript, subject: convo.title),
+    );
+  }
+
+  //wipes every saved conversation
+  Future<void> clearAllConversations() async {
+    await conversationStore.saveAll([]);
+    setState(() {
+      conversations = [];
+      currentConversationId = _newConversationId();
+      chatHistory.clear();
+    });
+    geminiService.restoreHistory([]);
   }
 
   //plugin for text to speech
@@ -175,7 +271,7 @@ class _HomepageState extends State<Homepage> {
         });
         _scrollToBottom();
       }
-      await chatHistoryStore.save(chatHistory);
+      await _persistCurrentConversation();
       await systemSpeaks(speech);
     } catch (e) {
       if (!context.mounted) return;
@@ -194,7 +290,7 @@ class _HomepageState extends State<Homepage> {
     if (index == -1) return;
     setState(() => chatHistory.removeRange(index, chatHistory.length));
     geminiService.restoreHistory(chatHistory);
-    await chatHistoryStore.save(chatHistory);
+    await _persistCurrentConversation();
     textController.text = message.text;
     textController.selection = TextSelection.collapsed(
       offset: textController.text.length,
@@ -213,20 +309,6 @@ class _HomepageState extends State<Homepage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Auraly'),
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          tooltip: 'Settings',
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => SettingsPage(
-                themeMode: widget.themeMode,
-                onToggleTheme: widget.onToggleTheme,
-                onClearChat: clearChatHistory,
-                onSignOut: widget.onSignOut,
-              ),
-            ),
-          ),
-        ),
         centerTitle: true,
         actions: [
           if (isSpeaking)
@@ -235,12 +317,11 @@ class _HomepageState extends State<Homepage> {
               tooltip: 'Stop speaking',
               onPressed: stopSpeaking,
             ),
-          if (chatHistory.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Clear chat',
-              onPressed: clearChatHistory,
-            ),
+          IconButton(
+            icon: const Icon(Icons.add_comment_outlined),
+            tooltip: 'New chat',
+            onPressed: startNewConversation,
+          ),
           IconButton(
             icon: Icon(
               widget.themeMode == ThemeMode.dark
@@ -250,7 +331,29 @@ class _HomepageState extends State<Homepage> {
             tooltip: 'Toggle theme',
             onPressed: widget.onToggleTheme,
           ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => SettingsPage(
+                  themeMode: widget.themeMode,
+                  onToggleTheme: widget.onToggleTheme,
+                  onClearChat: clearAllConversations,
+                  onSignOut: widget.onSignOut,
+                ),
+              ),
+            ),
+          ),
         ],
+      ),
+      drawer: _ConversationDrawer(
+        conversations: conversations,
+        currentConversationId: currentConversationId,
+        onSelect: switchConversation,
+        onDelete: deleteConversation,
+        onShare: shareConversation,
+        onNewChat: startNewConversation,
       ),
       body: SingleChildScrollView(
         controller: scrollController,
@@ -542,6 +645,102 @@ class _ChatBubble extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ConversationDrawer extends StatelessWidget {
+  final List<Conversation> conversations;
+  final String currentConversationId;
+  final ValueChanged<String> onSelect;
+  final ValueChanged<String> onDelete;
+  final ValueChanged<Conversation> onShare;
+  final VoidCallback onNewChat;
+
+  const _ConversationDrawer({
+    required this.conversations,
+    required this.currentConversationId,
+    required this.onSelect,
+    required this.onDelete,
+    required this.onShare,
+    required this.onNewChat,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: Pallete.background(context),
+      child: SafeArea(
+        child: Column(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.add_comment_outlined),
+              title: const Text('New chat'),
+              onTap: () {
+                Navigator.pop(context);
+                onNewChat();
+              },
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: conversations.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No conversations yet',
+                        style: TextStyle(color: Pallete.fontColor(context)),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: conversations.length,
+                      itemBuilder: (context, index) {
+                        final convo = conversations[index];
+                        final isActive = convo.id == currentConversationId;
+                        return ListTile(
+                          selected: isActive,
+                          selectedTileColor: Pallete.surface(context),
+                          title: Text(
+                            convo.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Pallete.fontColor(context)),
+                          ),
+                          subtitle: Text(_formatDate(convo.updatedAt)),
+                          onTap: () {
+                            Navigator.pop(context);
+                            onSelect(convo.id);
+                          },
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.share_outlined),
+                                tooltip: 'Share',
+                                onPressed: () => onShare(convo),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                tooltip: 'Delete',
+                                onPressed: () => onDelete(convo.id),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return '${months[date.month - 1]} ${date.day}, $hour:$minute';
   }
 }
 

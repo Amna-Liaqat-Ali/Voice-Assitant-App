@@ -204,14 +204,20 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 16),
 
-                _SectionTitle('Conversation'),
+                _SectionTitle('Conversations'),
+                Text(
+                  'Individual conversations can be deleted or shared from '
+                  'the history panel (the menu icon on the home screen).',
+                  style: TextStyle(color: Pallete.fontColor(context)),
+                ),
+                const SizedBox(height: 8),
                 OutlinedButton.icon(
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text('Clear chat history'),
+                  icon: const Icon(Icons.delete_forever_outlined),
+                  label: const Text('Delete all conversations'),
                   onPressed: () {
                     widget.onClearChat();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Chat history cleared')),
+                      const SnackBar(content: Text('All conversations deleted')),
                     );
                   },
                 ),
