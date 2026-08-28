@@ -87,7 +87,11 @@ class _HomepageState extends State<Homepage> {
 
   //when user clicks on mic,it is called
   Future<void> startListening() async {
-    await speechToText.listen(onResult: onSpeechResult);
+    final locale = await loadAssistantLocale();
+    await speechToText.listen(
+      onResult: onSpeechResult,
+      localeId: locale,
+    );
     setState(() {});
   }
 
@@ -106,6 +110,7 @@ class _HomepageState extends State<Homepage> {
 
   //for system speaking from text
   Future<void> systemSpeaks(String content) async {
+    await flutterTts.setLanguage(await loadAssistantLocale());
     await flutterTts.speak(content);
   }
 
