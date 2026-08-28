@@ -1,11 +1,26 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:voice_assistant/chat_message.dart';
 import 'package:voice_assistant/secrets.dart';
 
 class GeminiService {
   //stores conversation history in Gemini's "contents" format
   final List<Map<String, dynamic>> messages = [];
+
+  //rebuilds Gemini's conversation context from previously saved chat history,
+  //so a restored session still remembers what was said
+  void restoreHistory(List<ChatMessage> history) {
+    messages.clear();
+    for (final message in history) {
+      messages.add({
+        'role': message.role == ChatRole.user ? 'user' : 'model',
+        'parts': [
+          {'text': message.text},
+        ],
+      });
+    }
+  }
 
   //extracts a readable message from a Gemini error response body
   String _errorMessageFrom(http.Response res) {

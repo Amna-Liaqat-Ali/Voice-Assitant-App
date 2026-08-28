@@ -4,6 +4,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistant/FeatureBox.dart';
+import 'package:voice_assistant/chat_history_store.dart';
 import 'package:voice_assistant/chat_message.dart';
 import 'package:voice_assistant/gemini_service.dart';
 import 'package:voice_assistant/pallete.dart';
@@ -26,15 +27,31 @@ class _HomepageState extends State<Homepage> {
   int delay = 200;
 
   final List<ChatMessage> chatHistory = [];
+  final chatHistoryStore = ChatHistoryStore();
   bool isProcessing = false;
   bool isSpeaking = false;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     initSpeechToText();
     initTextToSpeech();
+    loadChatHistory();
+  }
+
+  //restores a previous conversation from disk, if any
+  Future<void> loadChatHistory() async {
+    final saved = await chatHistoryStore.load();
+    if (saved.isEmpty) return;
+    geminiService.restoreHistory(saved);
+    setState(() => chatHistory.addAll(saved));
+  }
+
+  //wipes the current conversation, both on screen and on disk
+  Future<void> clearChatHistory() async {
+    await chatHistoryStore.clear();
+    geminiService.restoreHistory([]);
+    setState(() => chatHistory.clear());
   }
 
   //plugin for text to speech
@@ -106,6 +123,12 @@ class _HomepageState extends State<Homepage> {
               icon: const Icon(Icons.stop_circle_outlined),
               tooltip: 'Stop speaking',
               onPressed: stopSpeaking,
+            ),
+          if (chatHistory.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Clear chat',
+              onPressed: clearChatHistory,
             ),
         ],
       ),
@@ -254,6 +277,7 @@ class _HomepageState extends State<Homepage> {
                     ChatMessage(role: ChatRole.assistant, text: speech),
                   );
                 });
+                await chatHistoryStore.save(chatHistory);
                 await systemSpeaks(speech);
               } catch (e) {
                 if (context.mounted) {
