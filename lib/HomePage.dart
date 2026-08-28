@@ -17,7 +17,7 @@ import 'package:voice_assistant/settings_page.dart';
 class Homepage extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final ThemeMode themeMode;
-  final VoidCallback onSignOut;
+  final Future<void> Function() onSignOut;
 
   const Homepage({
     super.key,
@@ -31,6 +31,7 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   final speechToText = SpeechToText();
   final flutterTts = FlutterTts();
   String lastWords = '';
@@ -307,10 +308,29 @@ class _HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
-        title: Text('Auraly'),
+        title: Text(
+          'Auraly',
+          style: TextStyle(
+            fontFamily: 'Cera Pro',
+            fontWeight: FontWeight.bold,
+            color: Pallete.mainFontColor,
+          ),
+        ),
         centerTitle: true,
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(gradient: Pallete.appBarGradient(context)),
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Conversation history',
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          ),
           if (isSpeaking)
             IconButton(
               icon: const Icon(Icons.stop_circle_outlined),

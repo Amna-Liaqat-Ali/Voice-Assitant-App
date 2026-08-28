@@ -24,7 +24,7 @@ class SettingsPage extends StatefulWidget {
   final ThemeMode themeMode;
   final VoidCallback onToggleTheme;
   final VoidCallback onClearChat;
-  final VoidCallback onSignOut;
+  final Future<void> Function() onSignOut;
 
   const SettingsPage({
     super.key,
@@ -236,7 +236,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 OutlinedButton.icon(
                   icon: const Icon(Icons.logout_outlined),
                   label: const Text('Sign out'),
-                  onPressed: widget.onSignOut,
+                  onPressed: () async {
+                    await widget.onSignOut();
+                    if (context.mounted) {
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    }
+                  },
                 ),
                 const SizedBox(height: 16),
 

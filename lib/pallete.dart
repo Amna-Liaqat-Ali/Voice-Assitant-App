@@ -38,4 +38,15 @@ class Pallete {
 
   static Color border(BuildContext context) =>
       isDark(context) ? darkBorderColor : borderColor;
+
+  //the app bar's signature gradient, distinct from the plain page background
+  static LinearGradient appBarGradient(BuildContext context) {
+    return LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: isDark(context)
+          ? [darkSurfaceColor, const Color.fromRGBO(40, 48, 60, 1)]
+          : [firstSuggestionBoxColor, thirdSuggestionBoxColor],
+    );
+  }
 }
