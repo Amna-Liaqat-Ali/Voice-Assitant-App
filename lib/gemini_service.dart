@@ -3,7 +3,7 @@ import 'package:voice_assistant/chat_message.dart';
 
 class GeminiService {
   final _model = FirebaseAI.googleAI().generativeModel(
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.6-flash',
   );
 
   //stores conversation history in Firebase AI's Content format
