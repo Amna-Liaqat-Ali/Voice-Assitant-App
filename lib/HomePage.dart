@@ -4,6 +4,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistant/FeatureBox.dart';
+import 'package:voice_assistant/chat_message.dart';
 import 'package:voice_assistant/gemini_service.dart';
 import 'package:voice_assistant/pallete.dart';
 
@@ -24,7 +25,7 @@ class _HomepageState extends State<Homepage> {
   int start = 200;
   int delay = 200;
 
-  String? generatedContent;
+  final List<ChatMessage> chatHistory = [];
   bool isProcessing = false;
 
   @override
@@ -119,10 +120,9 @@ class _HomepageState extends State<Homepage> {
                 ],
               ),
             ),
-            //chat
-            FadeInRight(
-              child: Visibility(
-                visible: true,
+            //chat history, or the greeting bubble if nothing has been said yet
+            if (chatHistory.isEmpty && !isProcessing)
+              FadeInRight(
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   margin: EdgeInsets.symmetric(
@@ -138,22 +138,32 @@ class _HomepageState extends State<Homepage> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10.0),
                     child: Text(
-                      generatedContent == null
-                          ? "Good Morning,what task can I do for you?"
-                          : generatedContent!,
+                      "Good Morning,what task can I do for you?",
                       style: TextStyle(
                         color: Pallete.mainFontColor,
-                        fontSize: generatedContent == null ? 20 : 18,
+                        fontSize: 20,
                         fontFamily: 'Cera Pro',
                       ),
                     ),
                   ),
                 ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                ).copyWith(top: 20),
+                child: Column(
+                  children: [
+                    for (final message in chatHistory)
+                      _ChatBubble(message: message),
+                    if (isProcessing) const _ThinkingBubble(),
+                  ],
+                ),
               ),
-            ),
             Visibility(
               //when gemini shows data don't show these boxes
-              visible: generatedContent == null,
+              visible: chatHistory.isEmpty,
               child: Container(
                 padding: EdgeInsets.all(10),
                 margin: EdgeInsets.only(left: 20, top: 10),
@@ -171,7 +181,7 @@ class _HomepageState extends State<Homepage> {
             ),
             Visibility(
               //when gemini shows data don't show these boxes
-              visible: generatedContent == null,
+              visible: chatHistory.isEmpty,
               child: Column(
                 children: [
                   //feature boxes
@@ -210,11 +220,21 @@ class _HomepageState extends State<Homepage> {
 
             if (speechToText.isListening) {
               await stopListening();
-              setState(() => isProcessing = true);
+              final userMessage = lastWords;
+              if (userMessage.trim().isEmpty) return;
+              setState(() {
+                chatHistory.add(
+                  ChatMessage(role: ChatRole.user, text: userMessage),
+                );
+                isProcessing = true;
+              });
               try {
-                final speech = await geminiService.getResponse(lastWords);
-                generatedContent = speech;
-                setState(() {});
+                final speech = await geminiService.getResponse(userMessage);
+                setState(() {
+                  chatHistory.add(
+                    ChatMessage(role: ChatRole.assistant, text: speech),
+                  );
+                });
                 await systemSpeaks(speech);
               } catch (e) {
                 if (context.mounted) {
@@ -239,6 +259,71 @@ class _HomepageState extends State<Homepage> {
                   ),
                 )
               : Icon(speechToText.isListening ? Icons.stop : Icons.mic),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatBubble extends StatelessWidget {
+  final ChatMessage message;
+
+  const _ChatBubble({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final isUser = message.role == ChatRole.user;
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isUser ? Pallete.firstSuggestionBoxColor : Pallete.whiteColor,
+          border: isUser ? null : Border.all(color: Pallete.borderColor),
+          borderRadius: BorderRadius.circular(18).copyWith(
+            topLeft: isUser ? null : Radius.zero,
+            topRight: isUser ? Radius.zero : null,
+          ),
+        ),
+        child: Text(
+          message.text,
+          style: TextStyle(
+            color: Pallete.mainFontColor,
+            fontSize: 16,
+            fontFamily: 'Cera Pro',
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThinkingBubble extends StatelessWidget {
+  const _ThinkingBubble();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Pallete.whiteColor,
+          border: Border.all(color: Pallete.borderColor),
+          borderRadius: BorderRadius.circular(18).copyWith(topLeft: Radius.zero),
+        ),
+        child: SizedBox(
+          width: 20,
+          height: 12,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Pallete.mainFontColor,
+          ),
         ),
       ),
     );
