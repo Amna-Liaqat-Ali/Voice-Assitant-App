@@ -112,6 +112,8 @@ class _HomepageState extends State<Homepage> {
   //for system speaking from text
   Future<void> systemSpeaks(String content) async {
     await flutterTts.setLanguage(await loadAssistantLocale());
+    await flutterTts.setSpeechRate(await loadSpeechRate());
+    await flutterTts.setPitch(await loadSpeechPitch());
     await flutterTts.speak(content);
   }
 
@@ -174,7 +176,13 @@ class _HomepageState extends State<Homepage> {
           icon: const Icon(Icons.menu),
           tooltip: 'Settings',
           onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const SettingsPage()),
+            MaterialPageRoute(
+              builder: (_) => SettingsPage(
+                themeMode: widget.themeMode,
+                onToggleTheme: widget.onToggleTheme,
+                onClearChat: clearChatHistory,
+              ),
+            ),
           ),
         ),
         centerTitle: true,

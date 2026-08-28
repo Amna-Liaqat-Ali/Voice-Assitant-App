@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:voice_assistant/chat_message.dart';
 import 'package:voice_assistant/secrets.dart';
-import 'package:voice_assistant/settings_page.dart';
 
 //status codes worth retrying: rate limited or the model is momentarily overloaded
 const _retryableStatusCodes = {429, 503};
@@ -74,12 +73,11 @@ class GeminiService {
         {'text': prompt},
       ],
     });
-    final apiKey = await loadApiKeyOverride() ?? geminiAPIKey;
     final streamedResponse = await _sendWithRetry(() {
       final request = http.Request(
         'POST',
         Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:streamGenerateContent?alt=sse&key=$apiKey',
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:streamGenerateContent?alt=sse&key=$geminiAPIKey',
         ),
       );
       request.headers['Content-Type'] = 'application/json';
