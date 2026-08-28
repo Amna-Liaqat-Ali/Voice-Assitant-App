@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:voice_assistant/google_auth_service.dart';
+import 'package:voice_assistant/google_signin_button.dart';
 import 'package:voice_assistant/pallete.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,7 +16,32 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _authService = GoogleAuthService();
   bool _signingIn = false;
+  bool _ready = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _authService.ensureInitialized();
+    if (!_authService.supportsButtonlessSignIn) {
+      //web: the rendered Google button reports success through this stream
+      _authService.authenticationEvents.listen((event) async {
+        if (event is GoogleSignInAuthenticationEventSignIn) {
+          try {
+            await _authService.linkToFirebase(event.user);
+            widget.onLoggedIn();
+          } catch (e) {
+            if (mounted) setState(() => _error = 'Sign-in failed. Please try again.');
+          }
+        }
+      });
+    }
+    if (mounted) setState(() => _ready = true);
+  }
 
   Future<void> _signIn() async {
     setState(() {
@@ -74,21 +101,33 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 16),
               ],
-              ElevatedButton.icon(
-                onPressed: _signingIn ? null : _signIn,
-                icon: _signingIn
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.g_mobiledata, size: 28),
-                label: Text(_signingIn ? 'Signing in...' : 'Sign in with Google'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Pallete.firstSuggestionBoxColor,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+              if (!_ready)
+                const Center(child: CircularProgressIndicator())
+              else if (_authService.supportsButtonlessSignIn)
+                ElevatedButton.icon(
+                  onPressed: _signingIn ? null : _signIn,
+                  icon: _signingIn
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.g_mobiledata, size: 28),
+                  label: Text(
+                    _signingIn ? 'Signing in...' : 'Sign in with Google',
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Pallete.firstSuggestionBoxColor,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                )
+              else
+                Center(
+                  child: SizedBox(
+                    height: 44,
+                    child: renderGoogleSignInButton(),
+                  ),
                 ),
-              ),
             ],
           ),
         ),
