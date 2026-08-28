@@ -226,8 +226,10 @@ class _HomepageState extends State<Homepage> {
                 child: Column(
                   children: [
                     for (final message in chatHistory)
-                      _ChatBubble(message: message),
-                    if (isProcessing) const _ThinkingBubble(),
+                      if (message.text.isNotEmpty)
+                        _ChatBubble(message: message)
+                      else if (isProcessing)
+                        const _ThinkingBubble(),
                   ],
                 ),
               ),
@@ -299,12 +301,23 @@ class _HomepageState extends State<Homepage> {
                 isProcessing = true;
               });
               try {
-                final speech = await geminiService.getResponse(userMessage);
                 setState(() {
                   chatHistory.add(
-                    ChatMessage(role: ChatRole.assistant, text: speech),
+                    const ChatMessage(role: ChatRole.assistant, text: ''),
                   );
                 });
+                String speech = '';
+                await for (final partial in geminiService.getResponseStream(
+                  userMessage,
+                )) {
+                  speech = partial;
+                  setState(() {
+                    chatHistory[chatHistory.length - 1] = ChatMessage(
+                      role: ChatRole.assistant,
+                      text: speech,
+                    );
+                  });
+                }
                 await chatHistoryStore.save(chatHistory);
                 await systemSpeaks(speech);
               } catch (e) {
