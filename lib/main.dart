@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -13,15 +15,28 @@ import 'package:voice_assistant/pallete.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  //required by Firebase AI Logic (Gemini) to verify requests come from this
-  //genuine app build, not a script hitting the backend directly
-  await FirebaseAppCheck.instance.activate(
-    providerAndroid: kDebugMode
-        ? AndroidDebugProvider()
-        : AndroidPlayIntegrityProvider(),
-    providerApple: kDebugMode ? AppleDebugProvider() : AppleAppAttestProvider(),
-  );
+  //fired without awaiting: activation can hang (e.g. web without a reCAPTCHA
+  //site key configured yet) and must never block the app from rendering
+  unawaited(_activateAppCheck());
   runApp(const MyApp());
+}
+
+//required by Firebase AI Logic (Gemini) to verify requests come from this
+//genuine app build, not a script hitting the backend directly
+Future<void> _activateAppCheck() async {
+  if (kIsWeb) return; // needs a reCAPTCHA site key registered in Firebase Console first
+  try {
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: kDebugMode
+          ? AndroidDebugProvider()
+          : AndroidPlayIntegrityProvider(),
+      providerApple: kDebugMode
+          ? AppleDebugProvider()
+          : AppleAppAttestProvider(),
+    );
+  } catch (_) {
+    // Gemini calls will surface their own error if App Check is unavailable.
+  }
 }
 
 class MyApp extends StatefulWidget {
