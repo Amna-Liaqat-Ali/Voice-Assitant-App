@@ -1,7 +1,9 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:voice_assistant/FeatureBox.dart';
@@ -178,6 +180,20 @@ class _HomepageState extends State<Homepage> {
     }
   }
 
+  //puts a previously sent message back into the input box for editing,
+  //dropping it and everything after it from the conversation
+  Future<void> editMessage(ChatMessage message) async {
+    final index = chatHistory.indexOf(message);
+    if (index == -1) return;
+    setState(() => chatHistory.removeRange(index, chatHistory.length));
+    geminiService.restoreHistory(chatHistory);
+    await chatHistoryStore.save(chatHistory);
+    textController.text = message.text;
+    textController.selection = TextSelection.collapsed(
+      offset: textController.text.length,
+    );
+  }
+
   void _sendTypedMessage() {
     final text = textController.text.trim();
     if (text.isEmpty) return;
@@ -296,7 +312,12 @@ class _HomepageState extends State<Homepage> {
                   children: [
                     for (final message in chatHistory)
                       if (message.text.isNotEmpty)
-                        _ChatBubble(message: message)
+                        _ChatBubble(
+                          message: message,
+                          onEdit: message.role == ChatRole.user
+                              ? () => editMessage(message)
+                              : null,
+                        )
                       else if (isProcessing)
                         const _ThinkingBubble(),
                   ],
@@ -420,51 +441,97 @@ class _HomepageState extends State<Homepage> {
 
 class _ChatBubble extends StatelessWidget {
   final ChatMessage message;
+  final VoidCallback? onEdit;
 
-  const _ChatBubble({required this.message});
+  const _ChatBubble({required this.message, this.onEdit});
+
+  Future<void> _showActions(BuildContext context) async {
+    final isUser = message.role == ChatRole.user;
+    await showModalBottomSheet(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            if (isUser)
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Edit & resend'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  onEdit?.call();
+                },
+              )
+            else ...[
+              ListTile(
+                leading: const Icon(Icons.copy_outlined),
+                title: const Text('Copy'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  Clipboard.setData(ClipboardData(text: message.text));
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share_outlined),
+                title: const Text('Share'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  SharePlus.instance.share(ShareParams(text: message.text));
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == ChatRole.user;
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isUser
-              ? Pallete.firstSuggestionBoxColor
-              : Pallete.surface(context),
-          border: isUser ? null : Border.all(color: Pallete.border(context)),
-          borderRadius: BorderRadius.circular(18).copyWith(
-            topLeft: isUser ? null : Radius.zero,
-            topRight: isUser ? Radius.zero : null,
+      child: GestureDetector(
+        onLongPress: () => _showActions(context),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
           ),
-        ),
-        child: isUser
-            ? Text(
-                message.text,
-                style: const TextStyle(
-                  color: Pallete.mainFontColor,
-                  fontSize: 16,
-                  fontFamily: 'Cera Pro',
-                ),
-              )
-            : MarkdownBody(
-                data: message.text,
-                shrinkWrap: true,
-                styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
-                    .copyWith(
-                      p: TextStyle(
-                        color: Pallete.fontColor(context),
-                        fontSize: 16,
-                        fontFamily: 'Cera Pro',
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: isUser
+                ? Pallete.firstSuggestionBoxColor
+                : Pallete.surface(context),
+            border: isUser
+                ? null
+                : Border.all(color: Pallete.border(context)),
+            borderRadius: BorderRadius.circular(18).copyWith(
+              topLeft: isUser ? null : Radius.zero,
+              topRight: isUser ? Radius.zero : null,
+            ),
+          ),
+          child: isUser
+              ? Text(
+                  message.text,
+                  style: const TextStyle(
+                    color: Pallete.mainFontColor,
+                    fontSize: 16,
+                    fontFamily: 'Cera Pro',
+                  ),
+                )
+              : MarkdownBody(
+                  data: message.text,
+                  shrinkWrap: true,
+                  styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                      .copyWith(
+                        p: TextStyle(
+                          color: Pallete.fontColor(context),
+                          fontSize: 16,
+                          fontFamily: 'Cera Pro',
+                        ),
                       ),
-                    ),
-              ),
+                ),
+        ),
       ),
     );
   }
