@@ -10,7 +10,14 @@ import 'package:voice_assistant/gemini_service.dart';
 import 'package:voice_assistant/pallete.dart';
 
 class Homepage extends StatefulWidget {
-  const Homepage({super.key});
+  final VoidCallback onToggleTheme;
+  final ThemeMode themeMode;
+
+  const Homepage({
+    super.key,
+    required this.onToggleTheme,
+    required this.themeMode,
+  });
 
   @override
   State<Homepage> createState() => _HomepageState();
@@ -130,6 +137,15 @@ class _HomepageState extends State<Homepage> {
               tooltip: 'Clear chat',
               onPressed: clearChatHistory,
             ),
+          IconButton(
+            icon: Icon(
+              widget.themeMode == ThemeMode.dark
+                  ? Icons.light_mode_outlined
+                  : Icons.dark_mode_outlined,
+            ),
+            tooltip: 'Toggle theme',
+            onPressed: widget.onToggleTheme,
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -171,8 +187,8 @@ class _HomepageState extends State<Homepage> {
                     horizontal: 40,
                   ).copyWith(top: 30),
                   decoration: BoxDecoration(
-                    border: Border.all(),
-                    color: Pallete.whiteColor,
+                    border: Border.all(color: Pallete.border(context)),
+                    color: Pallete.surface(context),
                     borderRadius: BorderRadius.circular(
                       20,
                     ).copyWith(topLeft: Radius.zero),
@@ -182,7 +198,7 @@ class _HomepageState extends State<Homepage> {
                     child: Text(
                       "Good Morning,what task can I do for you?",
                       style: TextStyle(
-                        color: Pallete.mainFontColor,
+                        color: Pallete.fontColor(context),
                         fontSize: 20,
                         fontFamily: 'Cera Pro',
                       ),
@@ -215,7 +231,7 @@ class _HomepageState extends State<Homepage> {
                   style: TextStyle(
                     fontFamily: 'Cera Pro',
                     fontSize: 20,
-                    color: Pallete.mainFontColor,
+                    color: Pallete.fontColor(context),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -296,7 +312,7 @@ class _HomepageState extends State<Homepage> {
               ? SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(
+                  child: const CircularProgressIndicator(
                     strokeWidth: 2.5,
                     color: Pallete.mainFontColor,
                   ),
@@ -325,8 +341,10 @@ class _ChatBubble extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isUser ? Pallete.firstSuggestionBoxColor : Pallete.whiteColor,
-          border: isUser ? null : Border.all(color: Pallete.borderColor),
+          color: isUser
+              ? Pallete.firstSuggestionBoxColor
+              : Pallete.surface(context),
+          border: isUser ? null : Border.all(color: Pallete.border(context)),
           borderRadius: BorderRadius.circular(18).copyWith(
             topLeft: isUser ? null : Radius.zero,
             topRight: isUser ? Radius.zero : null,
@@ -335,7 +353,7 @@ class _ChatBubble extends StatelessWidget {
         child: Text(
           message.text,
           style: TextStyle(
-            color: Pallete.mainFontColor,
+            color: isUser ? Pallete.mainFontColor : Pallete.fontColor(context),
             fontSize: 16,
             fontFamily: 'Cera Pro',
           ),
@@ -356,8 +374,8 @@ class _ThinkingBubble extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Pallete.whiteColor,
-          border: Border.all(color: Pallete.borderColor),
+          color: Pallete.surface(context),
+          border: Border.all(color: Pallete.border(context)),
           borderRadius: BorderRadius.circular(18).copyWith(topLeft: Radius.zero),
         ),
         child: SizedBox(
@@ -365,7 +383,7 @@ class _ThinkingBubble extends StatelessWidget {
           height: 12,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: Pallete.mainFontColor,
+            color: Pallete.fontColor(context),
           ),
         ),
       ),
