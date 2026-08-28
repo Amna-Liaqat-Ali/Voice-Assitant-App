@@ -27,6 +27,7 @@ class _HomepageState extends State<Homepage> {
 
   final List<ChatMessage> chatHistory = [];
   bool isProcessing = false;
+  bool isSpeaking = false;
 
   @override
   void initState() {
@@ -40,7 +41,17 @@ class _HomepageState extends State<Homepage> {
   Future<void> initTextToSpeech() async {
     //for ios only
     await flutterTts.setSharedInstance(true);
+    flutterTts.setStartHandler(() => setState(() => isSpeaking = true));
+    flutterTts.setCompletionHandler(() => setState(() => isSpeaking = false));
+    flutterTts.setCancelHandler(() => setState(() => isSpeaking = false));
+    flutterTts.setErrorHandler((_) => setState(() => isSpeaking = false));
     setState(() {});
+  }
+
+  //lets the user cut off the assistant mid-sentence
+  Future<void> stopSpeaking() async {
+    await flutterTts.stop();
+    setState(() => isSpeaking = false);
   }
 
   //adding plugin in function for speech to text convertor
@@ -89,6 +100,14 @@ class _HomepageState extends State<Homepage> {
         title: Text('Auraly'),
         leading: Icon(Icons.menu),
         centerTitle: true,
+        actions: [
+          if (isSpeaking)
+            IconButton(
+              icon: const Icon(Icons.stop_circle_outlined),
+              tooltip: 'Stop speaking',
+              onPressed: stopSpeaking,
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
