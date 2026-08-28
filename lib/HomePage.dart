@@ -36,6 +36,7 @@ class _HomepageState extends State<Homepage> {
 
   final List<ChatMessage> chatHistory = [];
   final chatHistoryStore = ChatHistoryStore();
+  final textController = TextEditingController();
   bool isProcessing = false;
   bool isSpeaking = false;
 
@@ -121,6 +122,47 @@ class _HomepageState extends State<Homepage> {
     super.dispose();
     speechToText.stop();
     flutterTts.stop();
+    textController.dispose();
+  }
+
+  //shared by both the mic flow and the typed-message flow
+  Future<void> sendMessage(String userMessage) async {
+    if (userMessage.trim().isEmpty || isProcessing) return;
+    setState(() {
+      chatHistory.add(ChatMessage(role: ChatRole.user, text: userMessage));
+      chatHistory.add(const ChatMessage(role: ChatRole.assistant, text: ''));
+      isProcessing = true;
+    });
+    try {
+      String speech = '';
+      await for (final partial in geminiService.getResponseStream(
+        userMessage,
+      )) {
+        speech = partial;
+        setState(() {
+          chatHistory[chatHistory.length - 1] = ChatMessage(
+            role: ChatRole.assistant,
+            text: speech,
+          );
+        });
+      }
+      await chatHistoryStore.save(chatHistory);
+      await systemSpeaks(speech);
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      setState(() => isProcessing = false);
+    }
+  }
+
+  void _sendTypedMessage() {
+    final text = textController.text.trim();
+    if (text.isEmpty) return;
+    textController.clear();
+    sendMessage(text);
   }
 
   @override
@@ -282,6 +324,42 @@ class _HomepageState extends State<Homepage> {
           ],
         ),
       ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: textController,
+                  enabled: !isProcessing,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _sendTypedMessage(),
+                  decoration: InputDecoration(
+                    hintText: 'Type a message...',
+                    filled: true,
+                    fillColor: Pallete.surface(context),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(color: Pallete.border(context)),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.send),
+                color: Pallete.firstSuggestionBoxColor,
+                onPressed: isProcessing ? null : _sendTypedMessage,
+              ),
+            ],
+          ),
+        ),
+      ),
       floatingActionButton: ZoomIn(
         delay: Duration(milliseconds: start + 3 * delay),
         child: FloatingActionButton(
@@ -292,43 +370,7 @@ class _HomepageState extends State<Homepage> {
 
             if (speechToText.isListening) {
               await stopListening();
-              final userMessage = lastWords;
-              if (userMessage.trim().isEmpty) return;
-              setState(() {
-                chatHistory.add(
-                  ChatMessage(role: ChatRole.user, text: userMessage),
-                );
-                isProcessing = true;
-              });
-              try {
-                setState(() {
-                  chatHistory.add(
-                    const ChatMessage(role: ChatRole.assistant, text: ''),
-                  );
-                });
-                String speech = '';
-                await for (final partial in geminiService.getResponseStream(
-                  userMessage,
-                )) {
-                  speech = partial;
-                  setState(() {
-                    chatHistory[chatHistory.length - 1] = ChatMessage(
-                      role: ChatRole.assistant,
-                      text: speech,
-                    );
-                  });
-                }
-                await chatHistoryStore.save(chatHistory);
-                await systemSpeaks(speech);
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString())),
-                  );
-                }
-              } finally {
-                setState(() => isProcessing = false);
-              }
+              await sendMessage(lastWords);
             } else {
               await startListening();
             }
