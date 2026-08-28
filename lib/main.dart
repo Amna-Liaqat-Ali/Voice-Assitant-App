@@ -22,9 +22,10 @@ void main() async {
 }
 
 //required by Firebase AI Logic (Gemini) to verify requests come from this
-//genuine app build, not a script hitting the backend directly
+//genuine app build, not a script hitting the backend directly.
+//TODO: swap WebDebugProvider for ReCaptchaV3Provider once a reCAPTCHA site
+//key is registered in Firebase Console for production use.
 Future<void> _activateAppCheck() async {
-  if (kIsWeb) return; // needs a reCAPTCHA site key registered in Firebase Console first
   try {
     await FirebaseAppCheck.instance.activate(
       providerAndroid: kDebugMode
@@ -33,6 +34,7 @@ Future<void> _activateAppCheck() async {
       providerApple: kDebugMode
           ? AppleDebugProvider()
           : AppleAppAttestProvider(),
+      providerWeb: WebDebugProvider(),
     );
   } catch (_) {
     // Gemini calls will surface their own error if App Check is unavailable.
