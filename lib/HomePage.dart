@@ -1,5 +1,6 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -443,14 +444,27 @@ class _ChatBubble extends StatelessWidget {
             topRight: isUser ? Radius.zero : null,
           ),
         ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: isUser ? Pallete.mainFontColor : Pallete.fontColor(context),
-            fontSize: 16,
-            fontFamily: 'Cera Pro',
-          ),
-        ),
+        child: isUser
+            ? Text(
+                message.text,
+                style: const TextStyle(
+                  color: Pallete.mainFontColor,
+                  fontSize: 16,
+                  fontFamily: 'Cera Pro',
+                ),
+              )
+            : MarkdownBody(
+                data: message.text,
+                shrinkWrap: true,
+                styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                    .copyWith(
+                      p: TextStyle(
+                        color: Pallete.fontColor(context),
+                        fontSize: 16,
+                        fontFamily: 'Cera Pro',
+                      ),
+                    ),
+              ),
       ),
     );
   }
