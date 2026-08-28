@@ -4,5 +4,6 @@
 set -e
 cd "$(dirname "$0")"
 flutter build web --release
+echo ".vercel" > build/web/.vercelignore
 cd build/web
 vercel --prod --yes
