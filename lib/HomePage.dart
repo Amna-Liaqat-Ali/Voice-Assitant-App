@@ -128,9 +128,14 @@ class _HomepageState extends State<Homepage> {
 
   //for system speaking from text
   Future<void> systemSpeaks(String content) async {
-    await flutterTts.setLanguage(await loadAssistantLocale());
+    final locale = await loadAssistantLocale();
+    await flutterTts.setLanguage(locale);
     await flutterTts.setSpeechRate(await loadSpeechRate());
     await flutterTts.setPitch(await loadSpeechPitch());
+    final voiceName = await loadSelectedVoiceName();
+    if (voiceName != null) {
+      await flutterTts.setVoice({'name': voiceName, 'locale': locale});
+    }
     await flutterTts.speak(content);
   }
 
