@@ -46,3 +46,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Machine-specific, never commit
+android/local.properties
+android/.gradle/
+android/key.properties
+ios/Flutter/Flutter.podspec
+**/Pods/
+*.jks
+*.keystore
