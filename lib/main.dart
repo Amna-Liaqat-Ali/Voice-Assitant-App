@@ -54,6 +54,7 @@ class _MyAppState extends State<MyApp> {
   static const _themeModeKey = 'theme_mode';
   static const _onboardingCompleteKey = 'onboarding_complete';
   final _authService = GoogleAuthService();
+  final _navigatorKey = GlobalKey<NavigatorState>();
   ThemeMode themeMode = ThemeMode.light;
   bool? onboardingComplete;
   bool? isSignedIn;
@@ -69,7 +70,12 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  Future<void> _signOut() => _authService.signOut();
+  //clears any screens pushed on top (e.g. Settings) so the login screen,
+  //which replaces `home` once isSignedIn flips, is actually visible
+  Future<void> _signOut() async {
+    await _authService.signOut();
+    _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+  }
 
   Future<void> _loadThemeMode() async {
     final prefs = await SharedPreferences.getInstance();
@@ -100,6 +106,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Auraly',
       themeMode: themeMode,
