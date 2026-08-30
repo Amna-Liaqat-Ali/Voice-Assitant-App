@@ -4,7 +4,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 class GoogleAuthService {
   final _auth = FirebaseAuth.instance;
   final _googleSignIn = GoogleSignIn.instance;
-  bool _initialized = false;
+  //GoogleSignIn.instance is a singleton shared across every GoogleAuthService
+  //object, so initialization state must be too - otherwise a fresh instance
+  //(e.g. a new LoginPage after sign-out) calls initialize() a second time,
+  //which throws on web because the underlying completer is already resolved
+  static Future<void>? _initializeFuture;
 
   User? get currentUser => _auth.currentUser;
 
@@ -17,10 +21,8 @@ class GoogleAuthService {
   Stream<GoogleSignInAuthenticationEvent> get authenticationEvents =>
       _googleSignIn.authenticationEvents;
 
-  Future<void> ensureInitialized() async {
-    if (_initialized) return;
-    await _googleSignIn.initialize();
-    _initialized = true;
+  Future<void> ensureInitialized() {
+    return _initializeFuture ??= _googleSignIn.initialize();
   }
 
   //links an already-authenticated Google account (from either the
