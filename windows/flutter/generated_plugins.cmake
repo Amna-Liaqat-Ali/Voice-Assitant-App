@@ -6,7 +6,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_app_check
   firebase_auth
   firebase_core
-  flutter_secure_storage_windows
   flutter_tts
   share_plus
   speech_to_text_windows

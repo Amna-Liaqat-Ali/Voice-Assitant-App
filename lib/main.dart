@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voice_assistant/HomePage.dart';
+import 'package:voice_assistant/app_config.dart';
 import 'package:voice_assistant/firebase_options.dart';
 import 'package:voice_assistant/google_auth_service.dart';
 import 'package:voice_assistant/login_page.dart';
@@ -21,10 +22,6 @@ void main() async {
   runApp(const MyApp());
 }
 
-//the public reCAPTCHA Enterprise site key registered for this app in
-//Firebase Console > App Check > voice_assistant (web)
-const _recaptchaEnterpriseSiteKey = '6LfTtp0tAAAAADJhcpWRPxTQQGhzkHbioQZhBPwv';
-
 //required by Firebase AI Logic (Gemini) to verify requests come from this
 //genuine app build, not a script hitting the backend directly
 Future<void> _activateAppCheck() async {
@@ -36,7 +33,9 @@ Future<void> _activateAppCheck() async {
       providerApple: kDebugMode
           ? AppleDebugProvider()
           : AppleAppAttestProvider(),
-      providerWeb: ReCaptchaEnterpriseProvider(_recaptchaEnterpriseSiteKey),
+      providerWeb: ReCaptchaEnterpriseProvider(
+        AppConfig.recaptchaEnterpriseSiteKey,
+      ),
     );
   } catch (_) {
     // Gemini calls will surface their own error if App Check is unavailable.
