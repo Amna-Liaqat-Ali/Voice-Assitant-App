@@ -14,13 +14,6 @@ Auraly is a Flutter-based voice assistant app that listens to your voice (or tak
 - Animated UI components using [`animate_do`]
 
 ---
-## UI Preview
-
-Here is the home screen UI of the app:
-
-![Home Screen](screenshots/home_page.png)
-
----
 ## How to Run
 
 1. Run `flutter pub get`.
